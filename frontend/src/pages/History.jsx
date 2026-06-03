@@ -28,6 +28,7 @@ export default function History() {
   }, []);
 
   const filteredClaims = claims.filter(claim => 
+    (claim.heading || '').toLowerCase().includes(search.toLowerCase()) ||
     (claim.claim_reason || '').toLowerCase().includes(search.toLowerCase()) ||
     (claim.final_summary || '').toLowerCase().includes(search.toLowerCase())
   );
@@ -97,7 +98,7 @@ export default function History() {
             >
               <div className="flex justify-between items-start mb-4 relative z-10">
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-800/50">
-                  Analysis
+                  {claim.claim_type || 'Analysis'}
                 </span>
                 <span className="text-xs font-medium text-gray-400">
                   {format(new Date(claim.created_at), 'MMM d, yyyy')}
@@ -105,11 +106,11 @@ export default function History() {
               </div>
               
               <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-2 mb-2 flex-1 relative z-10">
-                {claim.claim_reason || 'Unknown Reason'}
+                {claim.heading || claim.claim_reason || 'Unknown Reason'}
               </h3>
               
               <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-6 relative z-10">
-                {claim.final_summary || 'No summary available.'}
+                {claim.preview || claim.final_summary || 'No summary available.'}
               </p>
               
               <div className="flex items-center text-sm font-semibold text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform relative z-10">
@@ -134,9 +135,20 @@ export default function History() {
       >
         {selectedClaim && (
           <div className="space-y-6">
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 pb-4 border-b border-gray-100 dark:border-gray-700">
-              Analyzed on {format(new Date(selectedClaim.created_at), 'MMMM d, yyyy h:mm a')}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between text-sm text-gray-500 dark:text-gray-400 pb-4 border-b border-gray-100 dark:border-gray-700 gap-2">
+              <span>Analyzed on {format(new Date(selectedClaim.created_at), 'MMMM d, yyyy h:mm a')}</span>
+              {selectedClaim.claim_type && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                  {selectedClaim.claim_type}
+                </span>
+              )}
             </div>
+
+            {selectedClaim.heading && (
+              <div className="mb-2">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedClaim.heading}</h3>
+              </div>
+            )}
 
             <div className="bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 p-5 rounded-2xl">
               <h4 className="text-xs font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 mb-2">Claim Reason</h4>

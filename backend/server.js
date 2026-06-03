@@ -95,7 +95,7 @@ app.get('/api/history', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     // We only fetch claims that belong to this user. We also order by created_at DESC.
     const [claims] = await db.execute(
-      'SELECT id, claim_reason, coverage_summary, final_summary, created_at FROM claims WHERE user_id = ? ORDER BY created_at DESC', 
+      'SELECT id, heading, claim_type, preview, claim_reason, coverage_summary, final_summary, created_at FROM claims WHERE user_id = ? ORDER BY created_at DESC', 
       [userId]
     );
     res.json(claims);
@@ -139,14 +139,17 @@ app.post('/api/analyze-claim', authenticateToken, upload.single('file'), async (
     // Save to MySQL database with the user_id
     const userId = req.user.id;
     const query = `
-      INSERT INTO claims (original_text, claim_reason, coverage_summary, final_summary, user_id)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO claims (original_text, heading, claim_type, preview, claim_reason, coverage_summary, final_summary, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const [dbResult] = await db.execute(query, [
-      documentText, 
-      aiResult.claim_reason, 
-      aiResult.coverage_summary, 
-      aiResult.summary,
+      documentText,
+      aiResult.heading || null,
+      aiResult.claim_type || null,
+      aiResult.preview || null,
+      aiResult.claim_reason || null, 
+      aiResult.coverage_summary || null, 
+      aiResult.summary || null,
       userId
     ]);
 

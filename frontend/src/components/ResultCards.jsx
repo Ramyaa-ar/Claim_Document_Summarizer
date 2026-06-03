@@ -5,10 +5,17 @@ export default function ResultCards({ result }) {
 
   return (
     <div className="space-y-6 mt-8">
-      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-white">
-        <FileCheck className="text-green-600 dark:text-green-400" />
-        Analysis Results
-      </h2>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 className="text-2xl md:text-3xl font-bold flex items-center gap-3 text-gray-900 dark:text-white tracking-tight">
+          <FileCheck className="text-green-600 dark:text-green-400" size={28} />
+          {result.heading || "Analysis Results"}
+        </h2>
+        {result.claim_type && (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 self-start sm:self-auto">
+            {result.claim_type} Claim
+          </span>
+        )}
+      </div>
       
       <div className="grid md:grid-cols-2 gap-6">
         {/* Claim Reason Card */}
