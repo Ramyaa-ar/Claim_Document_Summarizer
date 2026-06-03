@@ -26,6 +26,18 @@ async function updateDatabase() {
       console.log("Columns already exist.");
     }
     
+    // Add document_hash for deduplication
+    const [hashColumns] = await connection.query(`SHOW COLUMNS FROM claims LIKE 'document_hash'`);
+    if (hashColumns.length === 0) {
+      await connection.query(`
+        ALTER TABLE claims 
+        ADD COLUMN document_hash VARCHAR(64) DEFAULT NULL;
+      `);
+      console.log("Successfully added document_hash to claims table.");
+    } else {
+      console.log("document_hash column already exists.");
+    }
+    
     await connection.end();
   } catch (error) {
     console.error("Failed to update database schema:", error);

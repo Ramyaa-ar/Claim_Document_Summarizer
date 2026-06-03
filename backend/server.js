@@ -4,6 +4,7 @@ const multer = require('multer');
 const { extractText } = require('unpdf');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const db = require('./database');
@@ -133,17 +134,42 @@ app.post('/api/analyze-claim', authenticateToken, upload.single('file'), async (
       return res.status(400).json({ error: 'Extracted text is empty.' });
     }
 
+    const userId = req.user.id;
+    
+    // Normalize and Hash
+    const normalizedText = documentText.trim().replace(/\s+/g, ' ');
+    const documentHash = crypto.createHash('sha256').update(normalizedText).digest('hex');
+
+    // Check for duplicate
+    const [existingClaims] = await db.execute(
+      'SELECT id, heading, claim_type, preview, claim_reason, coverage_summary, final_summary as summary, created_at FROM claims WHERE document_hash = ? AND user_id = ?',
+      [documentHash, userId]
+    );
+
+    if (existingClaims.length > 0) {
+      const existingClaim = existingClaims[0];
+      
+      // Update the timestamp so it bumps to the top of the history page
+      await db.execute('UPDATE claims SET created_at = CURRENT_TIMESTAMP WHERE id = ?', [existingClaim.id]);
+      
+      return res.json({
+        cached: true,
+        data: {
+          ...existingClaim,
+          created_at: new Date().toISOString()
+        }
+      });
+    }
+
     // Call Gemini API to extract details
     const aiResult = await analyzeClaim(documentText);
-
-    // Save to MySQL database with the user_id
-    const userId = req.user.id;
     const query = `
-      INSERT INTO claims (original_text, heading, claim_type, preview, claim_reason, coverage_summary, final_summary, user_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO claims (original_text, document_hash, heading, claim_type, preview, claim_reason, coverage_summary, final_summary, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const [dbResult] = await db.execute(query, [
       documentText,
+      documentHash,
       aiResult.heading || null,
       aiResult.claim_type || null,
       aiResult.preview || null,
@@ -155,8 +181,11 @@ app.post('/api/analyze-claim', authenticateToken, upload.single('file'), async (
 
     // Return the response
     res.json({
-      id: dbResult.insertId,
-      ...aiResult
+      cached: false,
+      data: {
+        id: dbResult.insertId,
+        ...aiResult
+      }
     });
 
   } catch (error) {

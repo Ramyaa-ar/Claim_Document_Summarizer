@@ -37,7 +37,7 @@ export default function ResultCards({ result }) {
         {/* Coverage Summary Card */}
         <div className="group bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 dark:border-gray-700 border-l-4 border-l-blue-500 p-6 overflow-hidden relative">
           <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
-            <ShieldCheck size={80} className="text-blue-500" />
+            <ShieldCheck size={16} className="text-blue-500" />
           </div>
           <div className="relative z-10">
             <h3 className="text-xs font-bold tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-3 flex items-center gap-2">

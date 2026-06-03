@@ -25,8 +25,13 @@ export default function Dashboard() {
         },
       });
 
-      setResult(response.data);
-      toast.success('Analysis complete!');
+      if (response.data.cached) {
+        setResult(response.data.data);
+        toast('Loaded existing analysis from history', { icon: '🔄' });
+      } else {
+        setResult(response.data.data);
+        toast.success('Analysis complete!');
+      }
     } catch (err) {
       console.error(err);
       const errorMessage = err.response?.data?.error || 'An error occurred during analysis.';
