@@ -1,5 +1,6 @@
 import { FileText, Upload, Send } from 'lucide-react';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function InputForm({ onSubmit, isLoading }) {
   const [text, setText] = useState('');
@@ -7,13 +8,22 @@ export default function InputForm({ onSubmit, isLoading }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!text.trim() && !file) return;
+    if (!text.trim() && !file) {
+      toast.error('Please enter text or upload a PDF document.');
+      return;
+    }
     onSubmit({ text, file });
   };
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      if (selectedFile.type !== 'application/pdf') {
+        toast.error('Unsupported file format. Please upload a PDF.');
+        e.target.value = ''; // Reset input
+        return;
+      }
+      setFile(selectedFile);
       setText(''); // clear text if file is uploaded
     }
   };
