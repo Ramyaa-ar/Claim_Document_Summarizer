@@ -4,17 +4,29 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function analyzeClaim(text) {
   try {
-    const prompt = `You are an insurance claim analysis assistant.
-Extract the following from the given claim document:
+    const prompt = `You are an advanced insurance claim analysis assistant.
 
-1. Smart Claim Heading: Generate a short professional heading/title for the claim (e.g., "Highway Bike Accident").
-2. Claim Type Detection: Detect the category of claim. Possible values: Medical, Vehicle, Theft, Accident, Corporate, Travel, Property, Other.
+Analyze the provided insurance claim document carefully and extract meaningful structured insights.
+
+IMPORTANT INSTRUCTIONS:
+- Understand the context semantically
+- Identify policy risks, exclusions, waiting periods, and reimbursement issues
+- Avoid repeating the same information across sections
+- Keep each section focused and distinct
+- Generate professional insurance-style analysis
+- Return STRICT VALID JSON ONLY
+- Do not include markdown
+- Do not include explanation text outside JSON
+
+Extract the following:
+1. Smart Claim Heading: Generate a short professional heading describing the claim event itself, not just the person's name.
+2. Claim Type: Possible values: Medical, Vehicle, Theft, Accident, Corporate, Travel, Property, Other.
 3. Preview Text: Generate a short one-line preview suitable for history cards.
-4. Claim Reason: A detailed explanation of why the claim is being made.
-5. Coverage Summary: A summary of the policy coverage and deductibles.
-6. Final concise summary: Generate concise but professional summaries that are easy for non-technical users to understand.
+4. Claim Reason: Clearly explain why the claim was raised.
+5. Coverage Summary: Explain what is covered, what may not be covered, policy conditions, and reimbursement limitations.
+6. Final Summary: Generate a concise but professional summary for non-technical users.
 
-Return response in STRICT JSON format:
+Return STRICT JSON ONLY in this exact format:
 {
   "heading": "",
   "claim_type": "",
@@ -24,9 +36,7 @@ Return response in STRICT JSON format:
   "summary": ""
 }
 
-Ensure response is valid parsable JSON. No markdown formatting. No extra explanation text.
-
-Claim Document text:
+Claim Document:
 ${text}`;
 
     const response = await ai.models.generateContent({

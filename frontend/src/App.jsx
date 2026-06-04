@@ -13,7 +13,7 @@ function App() {
     <AuthProvider>
       <Router>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-          <Toaster position="top-right" />
+          <Toaster position="bottom-right" />
           <Navbar />
           <Routes>
             <Route path="/login" element={<Login />} />

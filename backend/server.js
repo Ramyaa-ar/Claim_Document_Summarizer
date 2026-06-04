@@ -117,27 +117,46 @@ app.post('/api/analyze-claim', authenticateToken, upload.single('file'), async (
     } 
     // Check if a PDF file was uploaded
     else if (req.file && req.file.mimetype === 'application/pdf') {
-      // unpdf requires a Uint8Array, so we convert the multer Buffer
-      const pdfData = await extractText(new Uint8Array(req.file.buffer));
-      if (pdfData && typeof pdfData === 'object' && pdfData.text) {
-        documentText = Array.isArray(pdfData.text) ? pdfData.text.join('\n') : pdfData.text;
-      } else if (Array.isArray(pdfData)) {
-        documentText = pdfData.join('\n');
-      } else {
-        documentText = typeof pdfData === 'string' ? pdfData : JSON.stringify(pdfData);
+      try {
+        // unpdf requires a Uint8Array, so we convert the multer Buffer
+        const pdfData = await extractText(new Uint8Array(req.file.buffer));
+        if (pdfData && typeof pdfData === 'object' && pdfData.text) {
+          documentText = Array.isArray(pdfData.text) ? pdfData.text.join('\n') : pdfData.text;
+        } else if (Array.isArray(pdfData)) {
+          documentText = pdfData.join('\n');
+        } else {
+          documentText = typeof pdfData === 'string' ? pdfData : JSON.stringify(pdfData);
+        }
+      } catch (pdfError) {
+        console.error('PDF extraction error:', pdfError);
+        return res.status(400).json({ error: 'Failed to extract text from the PDF. The file might be corrupted or encrypted.' });
       }
     } else {
       return res.status(400).json({ error: 'Please provide either text or upload a PDF file.' });
     }
 
-    if (!documentText.trim()) {
-      return res.status(400).json({ error: 'Extracted text is empty.' });
+    if (!documentText || !documentText.trim()) {
+      return res.status(400).json({ error: 'Extracted text is empty. Please provide a valid document.' });
+    }
+
+    // Normalization & Cleaning
+    const normalizedText = documentText
+      .replace(/\r\n/g, '\n') // Normalize newlines
+      .replace(/[^\S\n]+/g, ' ') // Collapse horizontal whitespace, preserve newlines
+      .replace(/(?<=\s)n(?=\d)/g, '₹') // Fix common currency extraction issues
+      .replace(/\uFFFD/g, '') // Remove broken unicode replacement character
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\x00-\x09\x0B-\x0C\x0E-\x1F\x7F]/g, '') // Remove invalid/unprintable characters
+      .trim();
+
+    // Validate text length
+    if (normalizedText.length < 20) {
+      return res.status(400).json({ error: 'Extracted text is too short for meaningful analysis. Please provide a more detailed document.' });
     }
 
     const userId = req.user.id;
     
     // Normalize and Hash
-    const normalizedText = documentText.trim().replace(/\s+/g, ' ');
     const documentHash = crypto.createHash('sha256').update(normalizedText).digest('hex');
 
     // Check for duplicate
@@ -161,14 +180,14 @@ app.post('/api/analyze-claim', authenticateToken, upload.single('file'), async (
       });
     }
 
-    // Call Gemini API to extract details
-    const aiResult = await analyzeClaim(documentText);
+    // Call Gemini API to extract details (using cleaned text)
+    const aiResult = await analyzeClaim(normalizedText);
     const query = `
       INSERT INTO claims (original_text, document_hash, heading, claim_type, preview, claim_reason, coverage_summary, final_summary, user_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const [dbResult] = await db.execute(query, [
-      documentText,
+      normalizedText,
       documentHash,
       aiResult.heading || null,
       aiResult.claim_type || null,
