@@ -25,7 +25,7 @@ Extract the following:
 4. Claim Reason: Clearly explain why the claim was raised.
 5. Coverage Summary: Explain what is covered, what may not be covered, policy conditions, and reimbursement limitations.
 6. Final Summary: Generate a concise but professional summary for non-technical users.
-7. Financial Breakdown: Extract exact numbers for the settlement. Use rule: Gross Claim - Deductions = Final Approved Amount. Output numbers only (no currency symbols in values). If a value is unknown, set it to 0.
+7. Financial Breakdown: Extract the exact RAW numerical values from the document for the gross claim and deductions. DO NOT calculate the final approved amount yourself. Output numbers only (no currency symbols). If a value is unknown, set it to 0.
 
 Return STRICT JSON ONLY in this exact format:
 {
@@ -37,9 +37,7 @@ Return STRICT JSON ONLY in this exact format:
   "summary": "",
   "financial_breakdown": {
     "gross_claim": 0,
-    "total_deductions": 0,
-    "final_approved_amount": 0,
-    "insured_liability": 0
+    "total_deductions": 0
   }
 }
 

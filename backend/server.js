@@ -183,12 +183,14 @@ app.post('/api/analyze-claim', authenticateToken, upload.single('file'), async (
     // Call Gemini API to extract details (using cleaned text)
     const aiResult = await analyzeClaim(normalizedText);
     
-    // Extract financial breakdown safely
+    // Extract raw numbers safely
     const fb = aiResult.financial_breakdown || {};
-    const grossClaim = fb.gross_claim || 0;
-    const deductions = fb.total_deductions || 0;
-    const finalAmount = fb.final_approved_amount || 0;
-    const liability = fb.insured_liability || 0;
+    const grossClaim = Number(fb.gross_claim) || 0;
+    const deductions = Number(fb.total_deductions) || 0;
+    
+    // Strict Backend Math Calculation (Rule-based numeric extraction layer)
+    const finalAmount = Math.max(0, grossClaim - deductions);
+    const liability = deductions;
 
     const query = `
       INSERT INTO claims (
