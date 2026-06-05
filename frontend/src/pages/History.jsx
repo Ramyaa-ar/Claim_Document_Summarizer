@@ -1,10 +1,21 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { Search, FileText } from 'lucide-react';
+import { Search, FileText, Calculator } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
 import Skeleton from '../components/Skeleton';
+
+const formatINR = (amount) => {
+  if (amount === undefined || amount === null) return '₹0';
+  const numericAmount = Number(amount);
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(numericAmount);
+};
 
 export default function History() {
   const [claims, setClaims] = useState([]);
@@ -109,6 +120,12 @@ export default function History() {
                 {claim.heading || claim.claim_reason || 'Unknown Reason'}
               </h3>
               
+              {(claim.final_approved_amount !== undefined && claim.final_approved_amount !== null) && (
+                <div className="mb-3 text-sm font-bold text-green-600 dark:text-green-400 relative z-10">
+                  Approved: {formatINR(claim.final_approved_amount)}
+                </div>
+              )}
+              
               <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-6 relative z-10">
                 {claim.preview || claim.final_summary || 'No summary available.'}
               </p>
@@ -159,6 +176,33 @@ export default function History() {
               <h4 className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2">Coverage Summary</h4>
               <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">{selectedClaim.coverage_summary}</p>
             </div>
+            
+            {(selectedClaim.gross_claim_amount !== undefined && selectedClaim.gross_claim_amount !== null) && (
+              <div className="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-900/50 p-5 rounded-2xl border-l-4 border-l-purple-500">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-purple-600 dark:text-purple-400 mb-4 flex items-center gap-2">
+                  <Calculator size={16} />
+                  Financial Settlement
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Gross Claim</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{formatINR(selectedClaim.gross_claim_amount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-red-500 dark:text-red-400">Deductions</p>
+                    <p className="text-lg font-bold text-red-600 dark:text-red-400">-{formatINR(selectedClaim.total_deductions)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-green-600 dark:text-green-400">Final Approved</p>
+                    <p className="text-xl font-bold text-green-700 dark:text-green-400">{formatINR(selectedClaim.final_approved_amount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-orange-600 dark:text-orange-400">Insured Liability</p>
+                    <p className="text-lg font-bold text-orange-700 dark:text-orange-400">{formatINR(selectedClaim.insured_liability)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 p-5 rounded-2xl">
               <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">Final Summary</h4>

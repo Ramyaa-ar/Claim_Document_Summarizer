@@ -96,7 +96,7 @@ app.get('/api/history', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     // We only fetch claims that belong to this user. We also order by created_at DESC.
     const [claims] = await db.execute(
-      'SELECT id, heading, claim_type, preview, claim_reason, coverage_summary, final_summary, created_at FROM claims WHERE user_id = ? ORDER BY created_at DESC', 
+      'SELECT id, heading, claim_type, preview, claim_reason, coverage_summary, final_summary, gross_claim_amount, total_deductions, final_approved_amount, insured_liability, created_at FROM claims WHERE user_id = ? ORDER BY created_at DESC', 
       [userId]
     );
     res.json(claims);
@@ -161,7 +161,7 @@ app.post('/api/analyze-claim', authenticateToken, upload.single('file'), async (
 
     // Check for duplicate
     const [existingClaims] = await db.execute(
-      'SELECT id, heading, claim_type, preview, claim_reason, coverage_summary, final_summary as summary, created_at FROM claims WHERE document_hash = ? AND user_id = ?',
+      'SELECT id, heading, claim_type, preview, claim_reason, coverage_summary, final_summary as summary, gross_claim_amount, total_deductions, final_approved_amount, insured_liability, created_at FROM claims WHERE document_hash = ? AND user_id = ?',
       [documentHash, userId]
     );
 
@@ -182,9 +182,21 @@ app.post('/api/analyze-claim', authenticateToken, upload.single('file'), async (
 
     // Call Gemini API to extract details (using cleaned text)
     const aiResult = await analyzeClaim(normalizedText);
+    
+    // Extract financial breakdown safely
+    const fb = aiResult.financial_breakdown || {};
+    const grossClaim = fb.gross_claim || 0;
+    const deductions = fb.total_deductions || 0;
+    const finalAmount = fb.final_approved_amount || 0;
+    const liability = fb.insured_liability || 0;
+
     const query = `
-      INSERT INTO claims (original_text, document_hash, heading, claim_type, preview, claim_reason, coverage_summary, final_summary, user_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO claims (
+        original_text, document_hash, heading, claim_type, preview, 
+        claim_reason, coverage_summary, final_summary, user_id,
+        gross_claim_amount, total_deductions, final_approved_amount, insured_liability
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const [dbResult] = await db.execute(query, [
       normalizedText,
@@ -195,7 +207,11 @@ app.post('/api/analyze-claim', authenticateToken, upload.single('file'), async (
       aiResult.claim_reason || null, 
       aiResult.coverage_summary || null, 
       aiResult.summary || null,
-      userId
+      userId,
+      grossClaim,
+      deductions,
+      finalAmount,
+      liability
     ]);
 
     // Return the response
@@ -203,7 +219,11 @@ app.post('/api/analyze-claim', authenticateToken, upload.single('file'), async (
       cached: false,
       data: {
         id: dbResult.insertId,
-        ...aiResult
+        ...aiResult,
+        gross_claim_amount: grossClaim,
+        total_deductions: deductions,
+        final_approved_amount: finalAmount,
+        insured_liability: liability
       }
     });
 

@@ -1,4 +1,15 @@
-import { AlertCircle, FileCheck, ShieldCheck } from 'lucide-react';
+import { AlertCircle, FileCheck, ShieldCheck, Calculator } from 'lucide-react';
+
+const formatINR = (amount) => {
+  if (amount === undefined || amount === null) return '₹0';
+  const numericAmount = Number(amount);
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(numericAmount);
+};
 
 export default function ResultCards({ result }) {
   if (!result) return null;
@@ -50,6 +61,38 @@ export default function ResultCards({ result }) {
           </div>
         </div>
       </div>
+
+      {/* Financial Settlement Section */}
+      {(result.gross_claim_amount !== undefined && result.gross_claim_amount !== null) && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 p-6 md:p-8 mt-8 border-l-4 border-l-purple-500 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none">
+             <Calculator size={120} className="text-purple-500" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 relative z-10 flex items-center gap-2">
+            <Calculator className="text-purple-500" size={24} />
+            Financial Settlement
+          </h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Gross Claim</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatINR(result.gross_claim_amount)}</p>
+            </div>
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-100 dark:border-red-900/30">
+              <p className="text-sm font-semibold text-red-600 dark:text-red-400 mb-1">Total Deductions</p>
+              <p className="text-2xl font-bold text-red-700 dark:text-red-400">-{formatINR(result.total_deductions)}</p>
+            </div>
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl border border-green-100 dark:border-green-900/30">
+              <p className="text-sm font-semibold text-green-600 dark:text-green-400 mb-1">Final Approved</p>
+              <p className="text-2xl font-bold text-green-700 dark:text-green-400">{formatINR(result.final_approved_amount)}</p>
+            </div>
+            <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-900/30">
+              <p className="text-sm font-semibold text-orange-600 dark:text-orange-400 mb-1">Insured Liability</p>
+              <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{formatINR(result.insured_liability)}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Final Summary Section */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 p-6 md:p-8 mt-8 border-t-4 border-t-green-500 relative overflow-hidden group">
