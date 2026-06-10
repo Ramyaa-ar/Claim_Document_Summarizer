@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
-import { Search, FileText, Calculator } from 'lucide-react';
+import { Search, FileText, Calculator, TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal';
 import Skeleton from '../components/Skeleton';
@@ -49,6 +49,10 @@ export default function History() {
     return new Date(a.created_at) - new Date(b.created_at);
   });
 
+  const totalClaims = claims.length;
+  const totalApproved = claims.reduce((acc, claim) => acc + (Number(claim.final_approved_amount) || 0), 0);
+  const totalDeductions = claims.reduce((acc, claim) => acc + (Number(claim.total_deductions) || 0), 0);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-12">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
@@ -81,6 +85,8 @@ export default function History() {
           </select>
         </div>
       </div>
+
+
 
       {loading ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

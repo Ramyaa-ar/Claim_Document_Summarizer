@@ -8,7 +8,7 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 const db = require('./database');
-const { analyzeClaim } = require('./geminiService');
+const { analyzeClaim, chatClaim } = require('./geminiService');
 const { authenticateToken, JWT_SECRET } = require('./auth');
 
 const app = express();
@@ -232,6 +232,62 @@ app.post('/api/analyze-claim', authenticateToken, upload.single('file'), async (
   } catch (error) {
     console.error('Analysis error:', error);
     res.status(500).json({ error: 'Failed to analyze claim. Ensure your API key is correct and valid.' });
+  }
+});
+
+// POST endpoint for chatting with a claim document
+app.post('/api/chat-claim', authenticateToken, async (req, res) => {
+  try {
+    const { claimId, message, history } = req.body;
+    const userId = req.user.id;
+
+    if (!claimId || !message) {
+      return res.status(400).json({ error: 'claimId and message are required.' });
+    }
+
+    // Verify claim belongs to user and get original_text plus analysis context
+    const [claims] = await db.execute(
+      'SELECT original_text, heading, claim_reason, coverage_summary, final_summary, gross_claim_amount, total_deductions, final_approved_amount, insured_liability FROM claims WHERE id = ? AND user_id = ?', 
+      [claimId, userId]
+    );
+    
+    if (claims.length === 0) {
+      return res.status(404).json({ error: 'Claim not found or unauthorized.' });
+    }
+
+    const claimData = claims[0];
+    const documentText = claimData.original_text;
+
+    if (!documentText) {
+      return res.status(400).json({ error: 'Original document text is not available for this claim.' });
+    }
+
+    // Combine the raw document with the structured analysis context so the AI knows what the user sees
+    const combinedContext = `
+[CLAIM ANALYSIS CONTEXT - THIS IS WHAT THE USER SEES ON THEIR SCREEN]
+Heading: ${claimData.heading}
+Claim Reason: ${claimData.claim_reason}
+Coverage Summary: ${claimData.coverage_summary}
+Final Summary: ${claimData.final_summary}
+
+[FINANCIAL SETTLEMENT CALCULATIONS]
+Gross Claim: ₹${claimData.gross_claim_amount}
+Total Deductions: ₹${claimData.total_deductions}
+Final Approved Amount: ₹${claimData.final_approved_amount}
+Insured Liability: ₹${claimData.insured_liability}
+Note: "Insured Liability" is mathematically equivalent to "Total Deductions" in this system because the insured must pay for whatever is deducted from the gross claim.
+
+[ORIGINAL RAW DOCUMENT TEXT]
+${documentText}
+`;
+
+    const aiResponse = await chatClaim(combinedContext, history || [], message);
+    
+    res.json(aiResponse);
+
+  } catch (error) {
+    console.error('Chat error:', error);
+    res.status(500).json({ error: 'Failed to generate response.' });
   }
 });
 

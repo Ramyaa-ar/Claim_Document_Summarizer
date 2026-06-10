@@ -81,6 +81,50 @@ ${text}`;
   }
 }
 
+async function chatClaim(documentText, chatHistory, userMessage) {
+  try {
+    const systemPrompt = `You are an insurance claim assistant.
+You have access to the claim document and its financial settlement analysis:
+---
+${documentText}
+---
+Answer the user's questions clearly, accurately, and conversationally. If a question requires you to analyze the financial impact, deduce the answer logically from the provided summary.
+
+CRITICAL RULES:
+- NEVER use markdown formatting. Do not use asterisks (**) for bolding, and do not use bullet points or numbered lists.
+- Respond in natural, conversational paragraphs, exactly as a human agent would text in a chat window.
+- Keep your answers professional, direct, and easy to read.`;
+
+    const chat = ai.chats.create({
+      model: "gemini-2.5-flash-lite",
+      config: {
+        systemInstruction: systemPrompt,
+      }
+    });
+
+    // If there's history, we could map it, but for simplicity we'll just send a direct prompt with context.
+    // A better approach is to send history as part of the message or use the chat session.
+    // For this simple implementation, we'll append the history to the prompt.
+    let fullPrompt = "";
+    if (chatHistory && chatHistory.length > 0) {
+      chatHistory.forEach(msg => {
+        fullPrompt += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+      });
+      fullPrompt += `User: ${userMessage}`;
+    } else {
+      fullPrompt = userMessage;
+    }
+
+    const response = await chat.sendMessage({ message: fullPrompt });
+    return { reply: response.text };
+
+  } catch (error) {
+    console.error("Error in chatClaim:", error);
+    throw error;
+  }
+}
+
 module.exports = {
-  analyzeClaim
+  analyzeClaim,
+  chatClaim
 };
