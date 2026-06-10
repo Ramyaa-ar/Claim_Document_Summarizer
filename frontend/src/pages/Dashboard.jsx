@@ -41,12 +41,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleSample = () => {
-    handleAnalyze({
-      text: "Claimant: John Doe\nDate of Loss: 2023-10-15\nIncident: Water damage from burst pipe in the kitchen. Floor and cabinets damaged. Plumber verified issue.\nPolicy coverage: Homeowners standard, $500 deductible.",
-      file: null
-    });
-  };
+
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 md:py-12">
@@ -58,12 +53,7 @@ export default function Dashboard() {
           <p className="text-gray-600 dark:text-gray-400 text-lg mb-6">
             Upload an insurance claim PDF or paste the text directly. Our AI will instantly extract the reason, coverage, and provide a concise summary.
           </p>
-          <button
-            onClick={handleSample}
-            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline transition-colors"
-          >
-            Try a sample claim
-          </button>
+
         </div>
 
         <InputForm onSubmit={handleAnalyze} isLoading={isLoading} />
